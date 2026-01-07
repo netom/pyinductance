@@ -1,47 +1,42 @@
-# encoding: utf-8
-
+#!/usr/bin/env python
 
 VERSION = 20181217
 
-
 '''
 DESCRIPTION
-    This calculator employs the n = 0 sheath helix waveguide mode
-    to determine the RF inductance of a singleâ��layer helical roundâ��wire airâ��core coil.
+    This calculator employs the n = 0 sheath helix waveguide mode to determine
+    the RF inductance of a single-layer helical round-wire air-core coil.
 
-    Unlike quasistatic inductance calculators, this RF inductance calculator allows for
-    more accurate inductance predictions at high frequencies
-    by including the transmission line effects apparent with longer coils.
+    Unlike quasistatic inductance calculators, this RF inductance calculator
+    allows for more accurate inductance predictions at high frequencies by
+    including the transmission line effects apparent with longer coils.
 
-    Furthermore, the calculator closely follows the National Institute of Standards and Technology (NIST)
-    methodology for applying round wire and non-uniformity correction factors and
-    takes into account both the proximity effect and the skin effect.
-
+    Furthermore, the calculator closely follows the National Institute of
+    Standards and Technology (NIST) methodology for applying round wire and
+    non-uniformity correction factors and takes into account both the proximity
+    effect and the skin effect.
 
 USAGE
     See: https://hamwaves.com/inductance/en/index.html
 
-
 COPYRIGHT
     Copyright (C) 2007-2018  Serge Y. Stroobandt
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    This program is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the Free
+    Software Foundation, either version 3 of the License, or (at your option)
+    any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+    more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+    You should have received a copy of the GNU General Public License along
+    with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 CONTACT
-    xdg-open mailto:$(echo c2VyZ2VAc3Ryb29iYW5kdC5jb20K |base64 -d)
-
+    xdg-open mailto:$(echo c2VyZ2VAc3Ryb29iYW5kdC5jb20K | base64 -d)
 
 TODO
     - Replace fzero by Brent's method: 
@@ -55,30 +50,18 @@ TODO
     - more precise self-resonant frequency
 '''
 
-
-### IMPORTS ###
-
-
-#from browser import document, alert
 from math import atan, log, pi, sqrt, tan
 from mathextra import cot, I0, I1, K0, K1
 from fzero import fzero
 import time
 
-
-### CLASSES ###
-
-
 class Conductor:
-
     def __init__(self, description, rho, mu_r):
         self.description = description
         self.rho = rho
         self.mu_r = mu_r
 
-
 class HeaderIndices:
-
     def __init__(self, header, value):
         '''An object containing a value and its two nearest indices on a table header.'''
         self.value = value
@@ -93,18 +76,12 @@ class HeaderIndices:
             index1 = index2 - 1
         self.index1 = index1
 
-
 class Phi_p_d:
     pass    # Used to store interpolation results
-
-
-### GLOBALS ###
-
 
 c_0 = 299792458.0
 mu_0 = pi * 4E-7
 Z_0 = mu_0 * c_0
-
 
 # plating conductivity and permeability
 plating = []
@@ -125,7 +102,7 @@ p_d_header = [1, 1.111, 1.25, 1.429, 1.667, 2, 2.5, 3.333, 5, 10, 1E31]
 # Medhurst matrix
 medhurst = []
 
-# l/D â��          p/d â��
+# l/D -          p/d -
 medhurst.append([5.31, 3.73, 2.74, 2.12, 1.74, 1.44, 1.20, 1.16, 1.07, 1.02, 1.00])
 medhurst.append([5.45, 3.84, 2.83, 2.20, 1.77, 1.48, 1.29, 1.19, 1.08, 1.02, 1.00])
 medhurst.append([5.65, 3.99, 2.97, 2.28, 1.83, 1.54, 1.33, 1.21, 1.08, 1.03, 1.00])
@@ -138,10 +115,6 @@ medhurst.append([3.31, 2.92, 2.60, 2.29, 2.03, 1.80, 1.56, 1.34, 1.16, 1.04, 1.0
 medhurst.append([3.20, 2.90, 2.62, 2.34, 2.08, 1.81, 1.57, 1.34, 1.165, 1.04, 1.00])
 medhurst.append([3.23, 2.93, 2.65, 2.27, 2.10, 1.83, 1.58, 1.35, 1.17, 1.04, 1.00])
 medhurst.append([3.41, 3.11, 2.815, 2.51, 2.22, 1.93, 1.65, 1.395, 1.19, 1.05, 1.00])
-
-
-### FUNCTIONS ###
-
 
 def lookup_Phi(l, D, p, d):
 
@@ -167,8 +140,7 @@ def lookup_Phi(l, D, p, d):
     Phi += Phi_p_d.index1
     return Phi
 
-
-def find_f_res():
+def find_f_res(l, l_w_eff):
     # Secant method root finding algorithm
     # Loosely based upon http://www.see.ed.ac.uk/~jwp/JavaScript/programming/chop2.html
 
@@ -195,15 +167,15 @@ def find_f_res():
         tau_2 = k_0                           # another estimate
         zero = fzero(F, tau_1, tau_2)
         if zero['error_code'] == 2:
-            alert('An error occurred when solving for the resonant frequency.\n'
+            print('An error occurred when solving for the resonant frequency.\n'
                 + 'However, all shown results are useable.\n\n'
                 + zero['error_msg'])
-            document['f_res'].value = ''
+            print('f_res' + ' = ' + '') # TODO: auto
         tau = zero['zero']
 
         # Then, check for resonance.
-        # Î˛Â˛ = k_0Â˛ + Ď�Â˛
-        # Î˛â�� â�� Ď�/2
+        # Î˛Â˛ = k_0Â˛ + ψÂ˛
+        # Î˛- - ψ/2
         fx = sqrt(k_0**2 + tau**2) * l - pi/2
 
         if tries == -1:
@@ -222,35 +194,49 @@ def find_f_res():
 
     return x
 
-
-def calculate(event):
-
-    document['txt'].clear()
+# D: m, mean diameter of air core coil, measured from conductor centre
+#    to conductor centre (include the wire insulation thickness, if any)
+# N: number of turns
+# l: m, length of coil, measured from the connecting wires centre to centre
+# d: m, wire or tubing diameter
+# f: Hz, design frequency
+# plating_nr: index of plating material
+#
+def calculate(D, N, l, d, f, plating_nr):
 
     try:
-
-        plating_nr = int(document['plating'].value)
         rho = plating[plating_nr].rho * 1E-9
         mu_r_w = plating[plating_nr].mu_r
-        document['rho'].value = '%.2f' % (rho * 1E9)
-        document['mu_r_w'].value = '%.8f' % mu_r_w
 
-        N = float(document['N'].value)
-        global l
-        l = float(document['l'].value) * 1E-3
+        print()
+        print('Input')
+        print()
+
+        print('Mean diameter of the coil: D = {} mm\n'.format(D * 1E3))
+        print('Number of turns: N = {}\n'.format(N))
+        print('Length of the coil: ℓ = {} mm\n'.format(l * 1E3))
+        print('Wire or tubing diameter: d = {} mm\n'.format(d * 1E3))
+        print('Design frequency: f = {} MHz\n'.format('design frequency', f * 1E-6))
+        print('The (plating) material is {}.\n'.format(plating[plating_nr].description))
+        print('Plating conductivity: %.2f nΩ·m' % (rho * 1E9))
+        print('Plating permeability: %.8f' % mu_r_w)
+
+        print()
+        print('Coil')
+        print()
+
         p = l / N
-        document['p'].value = '%.2f' % round(p * 1E3, 2)
+        print('Winding pitch: %.2f mm' % round(p * 1E3, 2))
 
-        D = float(document['D'].value) * 1E-3
-        d = float(document['d'].value) * 1E-3
         Phi = lookup_Phi(l, D, p, d)
-        document['Phi'].value = '%.2f' % round(Phi, 2)
+        print('proximity factor interpolated from empirical Medhurst data: %.2f' % round(Phi, 2))
 
         D_eff = D - d * (1 - 1/sqrt(Phi))
-        document['D_eff'].value = '%.2f' % round(D_eff * 1E3, 2)
+        print('Effective coil diameter according to Stroobandt: %.2f mm' % round(D_eff * 1E3, 2))
 
-
-        # Correction factors
+        print()
+        print('Correction factors')
+        print()
 
         if l <= D_eff:    # The short coil expression gives a value that agrees better with the AGM result.
             k_L  = 1 + 0.383901 * (l/D_eff)**2 + 0.017108 * (l/D_eff)**4
@@ -262,36 +248,34 @@ def calculate(event):
             k_L  = 1 + 0.383901 * (D_eff/l)**2 + 0.017108 * (D_eff/l)**4
             k_L /= 1 + 0.258952 * (D_eff/l)**2
             k_L -= 4/3/pi * D_eff/l
-        document['k_L'].value = '%.6f' % round(k_L, 6)
+        print('Correction factor for field non-uniformity according to Lundin: %.6f' % round(k_L, 6))
 
         k_s = 5/4 - log(2 * p/d)
-        document['k_s'].value = '%.6f' % round(k_s, 6)
+        print('k_s' + ' = ' + '%.6f' % round(k_s, 6)) # TODO: auto
 
         c_9 = -log(2*pi) +3/2 +0.33084236 +1/120 -1/504 +0.0011925
         k_m  = log(2*pi) -3/2 -log(N)/6/N -0.33084236/N -1/(120*N**3) +1/(504*N**5) -0.0011925/N**7 + c_9/N**9
-        document['k_m'].value = '%.8f' % round(k_m, 8)
+        print('k_m' + ' = ' + '%.8f' % round(k_m, 8)) # TODO: auto
 
 
         # Effective series AC resistance
 
         l_w_phys = sqrt((N * pi * D)**2 + l**2)
-        document['l_w_phys'].value = '%.1f' % round(l_w_phys * 1E3, 1)
+        print('Physical conductor length: ℓ_w_phys = %.1f' % round(l_w_phys * 1E3, 1))
 
         global l_w_eff
         l_w_eff = sqrt((N * pi * D_eff)**2 + l**2)
-        document['l_w_eff'].value = '%.1f' % round(l_w_eff * 1E3, 1)
+        print('l_w_eff' + ' = ' + '%.1f' % round(l_w_eff * 1E3, 1)) # TODO: auto
 
-        f = float(document['f'].value) * 1E6
         delta_i = sqrt(rho /pi /f /mu_0 /mu_r_w)
-        document['delta_i'].value = '%.2f' % round(delta_i * 1E6, 2)
+        print('delta_i' + ' = ' + '%.2f' % round(delta_i * 1E6, 2)) # TODO: auto
 
         R_eff_s  = rho * l_w_eff
         R_eff_s /= pi * (d * delta_i - delta_i**2)
         R_eff_s *= Phi
         if(N > 1):
             R_eff_s *= (N-1) / N
-        document['R_eff_s'].value = '%.3f' % round(R_eff_s, 3)
-
+        print('R_eff_s' + ' = ' + '%.3f' % round(R_eff_s, 3)) # TODO: auto
 
         # Corrected current-sheet geometrical formula
 
@@ -299,32 +283,13 @@ def calculate(event):
         L_s  = pi * (D_eff * N)**2 /4 /l * k_L
         L_s -= D_eff * N * (k_s + k_m) / 2
         L_s *= mu_r_core * mu_0
-        document['L_s'].value = '%.3f' % round(L_s * 1E6, 3)
+        print('L_s' + ' = ' + '%.3f' % round(L_s * 1E6, 3)) # TODO: auto
 
         global psi
         psi = atan(p /pi /D_eff)
-        document['psi'].value = '%.2f' % round(psi / pi * 180, 2)
-
-
-        # Copy & paste text field
-        t = time.time()
-        document['txt'] <= 'QOILâ�˘ â�� https://hamwaves.com/qoil/ â�� v{}\n'.format(VERSION)
-        document['txt'] <= time.strftime('  Coil design %Y-%m-%d %H:%M\n', time.localtime(t))
+        print('Effective pitch angle: ψ = %.2f' % round(psi / pi * 180, 2))
 
         offset = 28
-        document['txt'] <= '\nINPUT\n'
-        document['txt'] <= '  {:{offset}} D = {} mm\n'.format('mean diameter of the coil', document['D'].value, offset=offset)
-        document['txt'] <= '  {:{offset}} N = {}\n'.format('number of turns', document['N'].value, offset=offset)
-        document['txt'] <= '  {:{offset}} â�� = {} mm\n'.format('length of the coil', document['l'].value, offset=offset)
-        document['txt'] <= '  {:{offset}} d = {} mm\n'.format('wire or tubing diameter', document['d'].value, offset=offset)
-        document['txt'] <= '  {:{offset}} f = {} MHz\n'.format('design frequency', document['f'].value, offset=offset)
-        document['txt'] <= '  The (plating) material is {}.\n'.format(plating[plating_nr].description)
-
-        document['txt'] <= '\nINTERMEDIATE RESULTS\n'
-        document['txt'] <= '  {:{offset}} p = {} mm\n'.format('winding pitch', document['p'].value, offset=offset)
-        document['txt'] <= '  {:{offset}} â��_w_phys = {} mm\n'.format('physical conductor length', document['l_w_phys'].value, offset=offset)
-        document['txt'] <= '  {:{offset}} Ď� = {}Â°\n'.format('effective pitch angle', document['psi'].value, offset=offset)
-
 
         # Characteristic impedance of the sheath helix waveguide mode
 
@@ -343,10 +308,10 @@ def calculate(event):
             zero = fzero(F, tau_1, tau_2)
             tau = zero['zero']
             beta = sqrt(k_0**2 + tau**2)
-            document['beta'].value = '%.4f' % round(beta, 4)
+            print('beta' + ' = ' + '%.4f' % round(beta, 4)) # TODO: auto
 
             Z_c = 60 * beta / k_0 * I0(tau*a) * K0(tau*a)
-            document['Z_c'].value = '%.1f' % round(Z_c, 1)
+            print('Z_c' + ' = ' + '%.1f' % round(Z_c, 1)) # TODO: auto
 
 
             # Effective equivalent circuit
@@ -354,38 +319,30 @@ def calculate(event):
             # Corrected sheath helix waveguide formula
             L_eff_s  = Z_c / omega * tan(beta * l) * k_L
             L_eff_s -= mu_0 * D_eff * N * (k_s + k_m) / 2
-            document['L_eff_s'].value = '%.3f' % round(L_eff_s * 1E6, 3)
+            print('L_eff_s' + ' = ' + '%.3f' % round(L_eff_s * 1E6, 3)) # TODO: auto
 
             X_eff_s = omega * L_eff_s
-            document['X_eff_s'].value = '%.1f' % round(X_eff_s, 1)
+            print('X_eff_s' + ' = ' + '%.1f' % round(X_eff_s, 1)) # TODO: auto
 
             Q_eff = X_eff_s / R_eff_s
-            document['Q_eff'].value = '%d' % int(Q_eff)
-
+            print('Q_eff' + ' = ' + '%d' % int(Q_eff)) # TODO: auto
 
             # Effective circuit results in copy & paste text field
-            document['txt'] <= '\nRESULTS\n'
-            document['txt'] <= '  Effective equivalent circuit\n'
-            document['txt'] <= '    {:{offset}} L_eff_s = {} ÎźH\n'.format('effective series inductance @ design frequency', document['L_eff_s'].value, offset=offset)
-            document['txt'] <= '    {:{offset}} X_eff_s = {} ÎŠ\n'.format('effective series reactance @ design frequency', document['X_eff_s'].value, offset=offset)
-            document['txt'] <= '    {:{offset}} R_eff_s = {} ÎŠ\n'.format('effective series AC resistance @ design frequency', document['R_eff_s'].value, offset=offset)
-            document['txt'] <= '    {:{offset}} Q_eff = {}\n'.format('effective unloaded quality factor @ design frequency', document['Q_eff'].value, offset=offset)
-
+            print('\nRESULTS\n')
+            print('  Effective equivalent circuit\n')
+            print('    {:{offset}} L_eff_s = {} μH\n'.format('effective series inductance @ design frequency', L_eff_s * 1E6, offset=offset))
+            print('    {:{offset}} X_eff_s = {} Ω\n'.format('effective series reactance @ design frequency', X_eff_s, offset=offset))
+            print('    {:{offset}} R_eff_s = {} Ω\n'.format('effective series AC resistance @ design frequency', R_eff_s, offset=offset))
+            print('    {:{offset}} Q_eff = {}\n'.format('effective unloaded quality factor @ design frequency', Q_eff, offset=offset))
 
         except:
-            document['txt'] <= '  Lumped circuit equivalent\n'
-            document['txt'] <= '    {:{offset}} L_s = {} ÎźH\n'.format('f-independent series inductance; geometrical formula', document['L_s'].value, offset=offset)
-            document['txt'] <= '    An error occurred when solving the dispersion function!\n'
-            document['txt'] <= '    However, all shown results are useable.\n'
-
-            outputs = ['beta', 'Z_c', 'L_eff_s', 'X_eff_s', 'Q_eff', 'R_s', 'C_p', 'f_res']
-            for i in range(len(outputs)):
-                document[outputs[i]].value = ''
-
+            print('  Lumped circuit equivalent\n')
+            print('    {:{offset}} L_s = {} μH\n'.format('f-independent series inductance; geometrical formula', L_s * 1E6, offset=offset))
+            print('    An error occurred when solving the dispersion function!\n')
+            print('    However, all shown results are useable.\n')
 
         try:
             # Lumped equivalent circuit
-
             R_p = (Q_eff**2 + 1) * R_eff_s
             X_L_s = omega * L_s
 
@@ -394,81 +351,43 @@ def calculate(event):
             Q_L = P + sqrt(P**2 - 1)
 
             R_s = X_L_s / Q_L
-            document['R_s'].value = '%.3f' % round(R_s, 3)
+            print('R_s' + ' = ' + '%.3f' % round(R_s, 3)) # TODO: auto
 
             X_eff_p = (Q_eff**2 + 1) / Q_eff**2 * X_eff_s
             X_L_p = (Q_L**2 + 1) / Q_L**2 * X_L_s
 
             X_C_p = X_eff_p * X_L_p / (X_L_p - X_eff_p)
             C_p = -1 /omega /X_C_p
-            document['C_p'].value = '%.1f' % round(C_p * 1E12, 1)
-
+            print('C_p' + ' = ' + '%.1f' % round(C_p * 1E12, 1)) # TODO: auto
 
             # Lumped circuit results in copy & paste text field
-            document['txt'] <= '  Lumped circuit equivalent\n'
-            document['txt'] <= '    {:{offset}} L_s = {} ÎźH\n'.format('f-independent series inductance; geometrical formula', document['L_s'].value, offset=offset)
-            document['txt'] <= '    {:{offset}} R_s = {} ÎŠ\n'.format('series AC resistance @ design frequency', document['R_s'].value, offset=offset)
-            document['txt'] <= '    {:{offset}} C_p = {} pF\n'.format('parallel stray capacitance @ design frequency', document['C_p'].value, offset=offset)
-
+            print('  Lumped circuit equivalent\n')
+            print('    {:{offset}} L_s = {} μH\n'.format('f-independent series inductance; geometrical formula', L_s * 1E6, offset=offset))
+            print('    {:{offset}} R_s = {} Ω\n'.format('series AC resistance @ design frequency', R_s, offset=offset))
+            print('    {:{offset}} C_p = {} pF\n'.format('parallel stray capacitance @ design frequency', C_p * 1E12, offset=offset))
 
         except:
-            document['txt'] <= '  Lumped circuit equivalent\n'
-            document['txt'] <= '    {:{offset}} L_s = {} ÎźH\n'.format('f-independent series inductance; geometrical formula', document['L_s'].value, offset=offset)
-            document['txt'] <= '    No lumped circuit equivalent is available!\n'
-            document['txt'] <= '    However, all shown results are useable.\n'
-
-            outputs = ['R_s', 'C_p', 'f_res']
-            for i in range(len(outputs)):
-                document[outputs[i]].value = ''
-
+            print('  Lumped circuit equivalent\n')
+            print('    {:{offset}} L_s = {} μH\n'.format('f-independent series inductance; geometrical formula', L_s * 1E6, offset=offset))
+            print('    No lumped circuit equivalent is available!\n')
+            print('    However, all shown results are useable.\n')
 
         offset = 57
         try:
-            # Selfâ��resonant frequency
-
-            f_res = find_f_res()
-            document['f_res'].value = '%.3f' % round(f_res * 1E-6, 3)
-
+            # Self-resonant frequency
+            f_res = find_f_res(l, l_w_eff)
+            print('f_res' + ' = ' + '%.3f' % round(f_res * 1E-6, 3)) # TODO: auto
 
             # Resonant frequency in copy & paste text field
-            document['txt'] <= '  {:{offset}} f_res = {} MHz\n'.format('Self-resonant frequency', document['f_res'].value, offset=offset)
-
+            print('  {:{offset}} f_res = {} MHz\n'.format('Self-resonant frequency', f_res * 1E-6, offset=offset))
 
         except:
-            document['txt'] <= '  An error occurred when solving for the self-resonant frequency!\n'
-            document['txt'] <= '  However, all shown results are useable.\n'
+            print('  An error occurred when solving for the self-resonant frequency!\n')
+            print('  However, all shown results are useable.\n')
 
-            document['f_res'].value = ''
+            print('f_res' + ' = ' + '') # TODO: auto
 
+    except Exception as e:
+        print('Exception: ' + e)
 
-        document['txt'] <= '\nDONATE\n'
-        document['txt'] <= '  If this calculator proved any useful to you,\n'
-        document['txt'] <= '  please, consider making a one-off donation\n'
-        document['txt'] <= '  towards keeping me and the server up and running.\n'
-        document['txt'] <= '  Thank you!'
-
-
-    except:
-        document['txt'].clear()    # COMMENT THIS LINE FOR TESTING PROGRESS
-        outputs  = ['p', 'Phi', 'D_eff', 'k_L', 'k_s', 'k_m', 'l_w_phys', 'l_w_eff', 'delta_i', 'R_eff_s', 'L_s', 'psi']
-        outputs += ['beta', 'Z_c', 'L_eff_s', 'X_eff_s', 'Q_eff', 'R_s', 'C_p', 'f_res']
-        for i in range(len(outputs)):
-            document[outputs[i]].value = ''
-
-
-### MAIN ###
-
-
-document['brython'].style.display = 'initial'
-calculate(None)
-
-
-### EVENT HANDLERS ###
-
-
-inputs = ['D', 'N', 'l', 'd', 'f']
-for i in range(len(inputs)):
-    document[inputs[i]].bind('input', calculate)
-    #document[inputs[i]].bind('focus', calculate)
-
-document['plating'].bind('change', calculate)
+calculate(0.050, 120, 1.0, 0.00179, 7100000.0, 0)
